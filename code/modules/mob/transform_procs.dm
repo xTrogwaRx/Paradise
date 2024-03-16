@@ -184,6 +184,34 @@
 
 	qdel(src)
 
+/mob/living/carbon/human/proc/paize(name, bespai)
+	if(notransform)
+		return
+	for(var/obj/item/W in src)
+		drop_item_ground(W)
+	regenerate_icons()
+	notransform = TRUE
+	canmove = FALSE
+	icon = null
+	invisibility = INVISIBILITY_ABSTRACT
+	var/obj/item/paicard/card
+
+	if(bespai)
+		card = new /obj/item/paicard/syndicate(loc)
+
+	else
+		card = new /obj/item/paicard(loc)
+
+	var/mob/living/silicon/pai/pai = new(card)
+	pai.key = key
+	card.setPersonality(pai)
+	pai.name = name
+	pai.real_name = name
+	card.name = name
+
+	to_chat(pai, "<B>You have become a pAI! Your name is [pai.name].</B>")
+	pai.update_pipe_vision()
+	INVOKE_ASYNC(GLOBAL_PROC, /proc/qdel, src)
 
 /mob/proc/gorillize(gorilla_type = "Normal", message = TRUE)
 	if(notransform)
@@ -227,24 +255,23 @@
 	qdel(src)
 
 
-/mob/proc/safe_respawn(passed_path)
+/mob/proc/safe_respawn(mob/living/passed_mob, check_station_level = TRUE)
 	. = FALSE
-
-	if(!ispath(passed_path))
-		return .
 
 	var/static/list/safe_respawn_typecache_nuclear = typecacheof(list(
 		/mob/living/simple_animal/pet/cat/Syndi,
 		/mob/living/simple_animal/pet/dog/fox/Syndifox,
 	))
-	if(is_type_in_typecache(passed_path, safe_respawn_typecache_nuclear))
+	if(is_type_in_typecache(passed_mob, safe_respawn_typecache_nuclear))
 		return GAMEMODE_IS_NUCLEAR
 
+	if(check_station_level && !is_admin(src) && !is_station_level(passed_mob.z))
+		return FALSE
 
-	if(ispath(passed_path, /mob/living/simple_animal/borer) && !jobban_isbanned(src, ROLE_BORER) && !jobban_isbanned(src, ROLE_SYNDICATE))
+	if(istype(passed_mob, /mob/living/simple_animal/borer) && !jobban_isbanned(src, ROLE_BORER) && !jobban_isbanned(src, ROLE_SYNDICATE))
 		return TRUE
 
-	if(ispath(passed_path, /mob/living/simple_animal/diona) && !jobban_isbanned(src, ROLE_NYMPH))
+	if(isnymph(passed_mob) && !jobban_isbanned(src, ROLE_NYMPH))
 		return TRUE
 
 	// Whitelist typecache. Alphabetical order please!
@@ -280,6 +307,5 @@
 		/mob/living/simple_animal/pet/dog/fox/alisa,
 	))
 
-	if(is_type_in_typecache(passed_path, safe_respawn_typecache_whitelist) && !is_type_in_typecache(passed_path, safe_respawn_typecache_blacklist))
+	if(is_type_in_typecache(passed_mob, safe_respawn_typecache_whitelist) && !is_type_in_typecache(passed_mob, safe_respawn_typecache_blacklist))
 		return TRUE
-
